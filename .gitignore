@@ -13,3 +13,30 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Secrets, Keystores & Environment
+*.jks
+*.keystore
+*.env
+*.env.*
+key.properties
+*.p8
+*.p12
+*.key
+google-services.json
+
+# Scratch scripts, logs & temporary build outputs
+*.dex
+*.jar
+*.ps1
+*.txt
+*.xml.dump
+*.dump.xml
+*_dump.xml
+.temp_extracted/
+aar_unpacked/
+.kotlin/
+
+# Temporary test screenshots
+screen*.png
+
