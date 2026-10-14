@@ -43,6 +43,19 @@
                 android:resource="@xml/lexi_wallpaper" />
         </service>
 
+        <service
+            android:name=".LexiWallpaperService"
+            android:label="LexiLock Daily Word"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/lexi_wallpaper" />
+        </service>
+
         <receiver
             android:name=".notifications.DailyWordReceiver"
             android:exported="false">

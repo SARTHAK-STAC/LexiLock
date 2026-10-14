@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.service.wallpaper.WallpaperService
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -20,10 +21,13 @@ import java.util.Locale
 open class LexiLockWallpaperService : WallpaperService() {
 
     companion object {
+        private const val TAG = "LexiWallpaperService"
+
         @Volatile
         private var activeEngine: LexiLockEngine? = null
 
         fun requestRedraw(context: Context? = null) {
+            Log.d(TAG, "requestRedraw() triggered, activeEngine=${activeEngine != null}")
             activeEngine?.refreshAndDraw()
             context?.let { ctx ->
                 try {
@@ -32,13 +36,24 @@ open class LexiLockWallpaperService : WallpaperService() {
                     }
                     ctx.sendBroadcast(intent)
                 } catch (e: Exception) {
-                    // Ignore broadcast errors
+                    Log.w(TAG, "Failed to broadcast ACTION_REQUEST_WALLPAPER_REDRAW", e)
                 }
             }
         }
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        Log.i(TAG, "WallpaperService.onCreate")
+    }
+
+    override fun onDestroy() {
+        Log.i(TAG, "WallpaperService.onDestroy")
+        super.onDestroy()
+    }
+
     override fun onCreateEngine(): Engine {
+        Log.i(TAG, "WallpaperService.onCreateEngine")
         return LexiLockEngine().also {
             activeEngine = it
         }
@@ -106,6 +121,7 @@ open class LexiLockWallpaperService : WallpaperService() {
 
         override fun onCreate(surfaceHolder: SurfaceHolder?) {
             super.onCreate(surfaceHolder)
+            Log.i(TAG, "LexiLockEngine.onCreate (isPreview=$isPreview)")
             setTouchEventsEnabled(true)
             tts = TextToSpeech(applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
@@ -127,8 +143,9 @@ open class LexiLockWallpaperService : WallpaperService() {
                     androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
                 )
                 isReceiverRegistered = true
+                Log.d(TAG, "updateReceiver successfully registered")
             } catch (e: Exception) {
-                // Ignore receiver registration failure
+                Log.w(TAG, "updateReceiver registration failed", e)
             }
         }
 
@@ -147,6 +164,7 @@ open class LexiLockWallpaperService : WallpaperService() {
         )
 
         fun refreshAndDraw() {
+            Log.d(TAG, "LexiLockEngine.refreshAndDraw (isPreview=$isPreview)")
             currentWord = repository.getActiveWallpaperWord()
             drawWallpaper()
             scheduleNextSlotCheck()
@@ -154,6 +172,7 @@ open class LexiLockWallpaperService : WallpaperService() {
 
         override fun onVisibilityChanged(visible: Boolean) {
             super.onVisibilityChanged(visible)
+            Log.d(TAG, "LexiLockEngine.onVisibilityChanged: visible=$visible (isPreview=$isPreview)")
             isVisibleState = visible
             if (visible) {
                 currentWord = repository.getActiveWallpaperWord()
@@ -166,6 +185,7 @@ open class LexiLockWallpaperService : WallpaperService() {
 
         override fun onSurfaceCreated(holder: SurfaceHolder) {
             super.onSurfaceCreated(holder)
+            Log.i(TAG, "LexiLockEngine.onSurfaceCreated (isPreview=$isPreview)")
             currentWord = repository.getActiveWallpaperWord()
             drawWallpaper()
             scheduleNextSlotCheck()
@@ -178,6 +198,7 @@ open class LexiLockWallpaperService : WallpaperService() {
             height: Int
         ) {
             super.onSurfaceChanged(holder, format, width, height)
+            Log.d(TAG, "LexiLockEngine.onSurfaceChanged: ${width}x${height} (isPreview=$isPreview)")
             currentWord = repository.getActiveWallpaperWord()
             drawWallpaper()
             scheduleNextSlotCheck()
@@ -189,13 +210,15 @@ open class LexiLockWallpaperService : WallpaperService() {
         }
 
         override fun onDestroy() {
+            Log.i(TAG, "LexiLockEngine.onDestroy (isPreview=$isPreview)")
             super.onDestroy()
             handler.removeCallbacks(slotRotationRunnable)
             if (isReceiverRegistered) {
                 try {
-                    unregisterReceiver(updateReceiver)
+                    applicationContext.unregisterReceiver(updateReceiver)
+                    Log.d(TAG, "updateReceiver successfully unregistered")
                 } catch (e: Exception) {
-                    // Ignore unregister errors
+                    Log.w(TAG, "Failed to unregister updateReceiver", e)
                 }
                 isReceiverRegistered = false
             }
